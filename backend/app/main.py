@@ -1,12 +1,9 @@
-# backend/app/main.py
-# Minimal FastAPI server - avoiding documentation issues
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from scraper import scrape_blog
 import json
 
-# Create FastAPI app WITHOUT auto-documentation
+# Create FastAPI app
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 # Enable CORS for Next.js
@@ -90,5 +87,3 @@ async def test():
 @app.get("/ping")
 async def ping():
     return {"message": "pong", "timestamp": "2025-07-10"}
-
-# Run with: uvicorn main:app --reload
