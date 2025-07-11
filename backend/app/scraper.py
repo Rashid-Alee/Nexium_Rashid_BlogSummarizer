@@ -1,16 +1,8 @@
-# backend/app/scraper.py
-# Advanced blog scraper - extracts ALL content!
-
 import requests
 from bs4 import BeautifulSoup
 import re
 
 def scrape_blog(url):
-    """
-    Advanced function to scrape ALL blog content
-    Input: URL string
-    Output: Dictionary with comprehensive results
-    """
     
     print(f"🌐 Advanced scraping: {url}")
     
@@ -171,7 +163,7 @@ def extract_content_advanced(soup):
     for strategy_func in content_strategies:
         try:
             content = strategy_func(soup)
-            if content and len(content) > 300:  # Minimum content threshold
+            if content and len(content) > 300:  
                 print(f"✅ Content extracted using: {strategy_func.__name__}")
                 return clean_text(content)
         except Exception as e:
@@ -233,7 +225,6 @@ def extract_from_structured_data(soup):
         except:
             continue
     
-    # Try microdata
     article_body = soup.select_one('[itemprop="articleBody"]')
     if article_body:
         return article_body.get_text()
@@ -282,7 +273,7 @@ def extract_metadata(soup):
                 metadata['publish_date'] = date_text
                 break
     
-    # Description/excerpt
+    # Description
     meta_desc = soup.select_one('meta[name="description"]')
     if meta_desc:
         metadata['description'] = meta_desc.get('content', '')
@@ -337,7 +328,7 @@ def test_scraper():
             print("❌ FAILED!")
             print(f"🔍 Error: {result['error']}")
         
-        # Brief pause between requests
+        #pause between requests
         import time
         time.sleep(2)
 
