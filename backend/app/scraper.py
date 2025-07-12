@@ -1,13 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+from summarizer import create_summary
 
 def scrape_blog(url):
-    
-    print(f"🌐 Advanced scraping: {url}")
+    """
+    Scrape blog content and generate AI summary
+    """
     
     try:
-        # Step 1: Get the webpage with better headers
+        # Setup request headers to avoid bot detection
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -26,38 +28,48 @@ def scrape_blog(url):
                 "error": f"Failed to access webpage. Status: {response.status_code}"
             }
         
-        print("✅ Webpage downloaded successfully!")
-        
-        # Step 2: Parse the HTML
+        # Parse HTML and clean unwanted elements
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Step 3: Clean unwanted elements FIRST
         remove_unwanted_elements(soup)
         
-        # Step 4: Extract title using multiple strategies
+        # Extract main content
         title = extract_title_advanced(soup)
-        print(f"📰 Title: {title}")
-        
-        # Step 5: Extract ALL content using multiple strategies
         content = extract_content_advanced(soup)
-        
-        # Step 6: Extract metadata
         metadata = extract_metadata(soup)
         
-        # Step 7: Calculate statistics
+        # Calculate basic stats
         word_count = len(content.split())
         char_count = len(content)
         paragraph_count = len([p for p in content.split('\n\n') if p.strip()])
         
-        print(f"✅ Extraction complete!")
-        print(f"   📊 Words: {word_count}")
-        print(f"   📊 Characters: {char_count}")
-        print(f"   📊 Paragraphs: {paragraph_count}")
+        # Generate AI summary if content is long enough
+        if word_count > 50:
+            try:
+                summary_result = create_summary(content, num_sentences=3)
+                
+                ai_summary = summary_result['summary']
+                summary_stats = {
+                    'original_sentences': summary_result['original_sentences'],
+                    'summary_sentences': summary_result['summary_sentences'],
+                    'important_words_found': summary_result['important_words_found'],
+                    'compression_ratio': f"{summary_result['summary_sentences']}/{summary_result['original_sentences']}"
+                }
+                
+            except Exception as e:
+                ai_summary = "Summary generation failed, but content extracted successfully."
+                summary_stats = {"error": str(e)}
         
+        else:
+            ai_summary = "Content too short for meaningful summarization."
+            summary_stats = {"note": "Content under 50 words"}
+        
+        # Return complete result
         return {
             "success": True,
             "title": title,
             "content": content,
+            "ai_summary": ai_summary,
+            "summary_stats": summary_stats,
             "word_count": word_count,
             "char_count": char_count,
             "paragraph_count": paragraph_count,
@@ -66,16 +78,13 @@ def scrape_blog(url):
         }
         
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
         return {
             "success": False,
             "error": f"Error occurred: {str(e)}"
         }
 
 def remove_unwanted_elements(soup):
-    """Remove elements we don't want in our content"""
-    
-    # Remove scripts, styles, and other non-content
+    """Remove scripts, ads, and navigation elements"""
     unwanted_tags = [
         'script', 'style', 'nav', 'footer', 'header', 'aside',
         'iframe', 'noscript', 'form', 'button', 'input'
@@ -85,7 +94,6 @@ def remove_unwanted_elements(soup):
         for element in soup.find_all(tag):
             element.decompose()
     
-    # Remove common unwanted classes and IDs
     unwanted_selectors = [
         '.advertisement', '.ads', '.social-share', '.comments',
         '.sidebar', '.menu', '.navigation', '.popup', '.modal',
@@ -96,93 +104,69 @@ def remove_unwanted_elements(soup):
     for selector in unwanted_selectors:
         for element in soup.select(selector):
             element.decompose()
-    
-    print("🧹 Cleaned unwanted elements")
 
 def extract_title_advanced(soup):
-    """Extract title using multiple advanced strategies"""
+    """Extract page title using multiple strategies"""
+    # Try h1 tags first
+    h1_tags = soup.find_all('h1')
+    if h1_tags:
+        for h1 in h1_tags:
+            title = h1.get_text().strip()
+            if len(title) > 10 and len(title) < 200:
+                return title
     
-    title_strategies = [
-        # Strategy 1: Common blog title patterns
-        lambda s: s.select_one('h1.post-title, h1.entry-title, h1.article-title'),
-        lambda s: s.select_one('.post-header h1, .entry-header h1, .article-header h1'),
-        
-        # Strategy 2: Semantic HTML
-        lambda s: s.select_one('article h1, main h1'),
-        
-        # Strategy 3: Schema.org structured data
-        lambda s: s.select_one('[itemProp="headline"], [itemProp="name"]'),
-        
-        # Strategy 4: OpenGraph meta tags
-        lambda s: s.select_one('meta[property="og:title"]'),
-        
-        # Strategy 5: First h1 tag
-        lambda s: s.select_one('h1'),
-        
-        # Strategy 6: Page title
-        lambda s: s.select_one('title')
+    # Try title-specific classes
+    title_selectors = [
+        '.post-title', '.entry-title', '.article-title',
+        '.title', '.headline', '.post-header h1',
+        'h1.title', 'h1.post-title'
     ]
     
-    for strategy in title_strategies:
-        try:
-            element = strategy(soup)
-            if element:
-                if element.name == 'meta':
-                    title = element.get('content', '')
-                else:
-                    title = element.get_text().strip()
-                
-                if title and len(title) > 3 and len(title) < 200:
-                    print(f"📰 Found title using strategy: {title[:50]}...")
-                    return clean_text(title)
-        except:
-            continue
+    for selector in title_selectors:
+        element = soup.select_one(selector)
+        if element:
+            title = element.get_text().strip()
+            if len(title) > 10:
+                return title
+    
+    # Fallback to HTML title tag
+    title_tag = soup.find('title')
+    if title_tag:
+        return title_tag.get_text().strip()
     
     return "No title found"
 
 def extract_content_advanced(soup):
-    """Extract ALL content using multiple advanced strategies"""
+    """Extract main content using multiple strategies"""
     
-    content_strategies = [
-        # Strategy 1: Semantic article content
+    # List of extraction strategies in order of preference
+    strategies = [
         extract_from_article,
-        
-        # Strategy 2: Common blog content patterns
         extract_from_content_classes,
-        
-        # Strategy 3: Main content area
         extract_from_main,
-        
-        # Strategy 4: Structured data
-        extract_from_structured_data,
-        
-        # Strategy 5: All paragraphs (fallback)
         extract_all_paragraphs
     ]
     
-    for strategy_func in content_strategies:
+    for strategy_func in strategies:
         try:
             content = strategy_func(soup)
-            if content and len(content) > 300:  
-                print(f"✅ Content extracted using: {strategy_func.__name__}")
+            if content and len(content.strip()) > 200:
                 return clean_text(content)
         except Exception as e:
-            print(f"⚠️  Strategy {strategy_func.__name__} failed: {e}")
             continue
     
     return "Could not extract meaningful content from this page"
 
 def extract_from_article(soup):
-    """Extract content from article tags"""
+    """Try extracting from <article> tags"""
     articles = soup.find_all('article')
     if articles:
-        # Get the largest article
         article = max(articles, key=lambda x: len(x.get_text()))
         return article.get_text()
     return ""
 
 def extract_from_content_classes(soup):
-    """Extract from common content classes"""
+    """Try content-specific CSS classes"""
     content_selectors = [
         '.post-content', '.entry-content', '.article-content',
         '.content', '.post-body', '.article-body',
@@ -193,7 +177,6 @@ def extract_from_content_classes(soup):
     for selector in content_selectors:
         elements = soup.select(selector)
         if elements:
-            # Get the element with most text
             element = max(elements, key=lambda x: len(x.get_text()))
             content = element.get_text()
             if len(content) > 300:
@@ -201,7 +184,7 @@ def extract_from_content_classes(soup):
     return ""
 
 def extract_from_main(soup):
-    """Extract from main content areas"""
+    """Try main content containers"""
     main_selectors = ['main', '.main', '#main', '.container .content']
     
     for selector in main_selectors:
@@ -212,27 +195,8 @@ def extract_from_main(soup):
                 return content
     return ""
 
-def extract_from_structured_data(soup):
-    """Extract from structured data"""
-    # Try JSON-LD structured data
-    json_scripts = soup.find_all('script', type='application/ld+json')
-    for script in json_scripts:
-        try:
-            import json
-            data = json.loads(script.string)
-            if 'articleBody' in data:
-                return data['articleBody']
-        except:
-            continue
-    
-    article_body = soup.select_one('[itemprop="articleBody"]')
-    if article_body:
-        return article_body.get_text()
-    
-    return ""
-
 def extract_all_paragraphs(soup):
-    """Fallback: extract all paragraph content"""
+    """Fallback: combine all paragraphs"""
     paragraphs = soup.find_all('p')
     if paragraphs:
         content = '\n\n'.join([p.get_text().strip() for p in paragraphs if p.get_text().strip()])
@@ -240,10 +204,10 @@ def extract_all_paragraphs(soup):
     return ""
 
 def extract_metadata(soup):
-    """Extract additional metadata"""
+    """Extract author, date, and description"""
     metadata = {}
     
-    # Author
+    # Try to find author
     author_selectors = [
         '.author', '.post-author', '.entry-author',
         '[rel="author"]', '[itemprop="author"]',
@@ -259,7 +223,7 @@ def extract_metadata(soup):
                 metadata['author'] = element.get_text().strip()
             break
     
-    # Publication date
+    # Try to find publication date
     date_selectors = [
         'time[datetime]', '.post-date', '.published',
         '.entry-date', '[itemprop="datePublished"]'
@@ -273,7 +237,7 @@ def extract_metadata(soup):
                 metadata['publish_date'] = date_text
                 break
     
-    # Description
+    # Extract description from meta tag
     meta_desc = soup.select_one('meta[name="description"]')
     if meta_desc:
         metadata['description'] = meta_desc.get('content', '')
@@ -281,7 +245,7 @@ def extract_metadata(soup):
     return metadata
 
 def clean_text(text):
-    """Clean and normalize text content"""
+    """Clean and normalize extracted text"""
     if not text:
         return ""
     
@@ -296,42 +260,3 @@ def clean_text(text):
     
     return text.strip()
 
-def test_scraper():
-    """Test function with better URLs"""
-    
-    print("🧪 Testing Advanced Blog Scraper")
-    print("=" * 60)
-    
-    # Better test URLs that should have lots of content
-    test_urls = [
-        "https://en.wikipedia.org/wiki/Artificial_intelligence",
-        "https://httpbin.org/html",
-        "https://example.com"
-    ]
-    
-    for i, test_url in enumerate(test_urls, 1):
-        print(f"\n🔸 Test {i}: {test_url}")
-        print("-" * 60)
-        
-        result = scrape_blog(test_url)
-        
-        if result["success"]:
-            print("🎉 SUCCESS!")
-            print(f"📰 Title: {result['title'][:80]}...")
-            print(f"📝 Words: {result['word_count']:,}")
-            print(f"📄 Characters: {result['char_count']:,}")
-            print(f"📄 Content preview: {result['content'][:200]}...")
-            if result.get('metadata'):
-                print(f"👤 Author: {result['metadata'].get('author', 'Not found')}")
-                print(f"📅 Date: {result['metadata'].get('publish_date', 'Not found')}")
-        else:
-            print("❌ FAILED!")
-            print(f"🔍 Error: {result['error']}")
-        
-        #pause between requests
-        import time
-        time.sleep(2)
-
-# Run test when file is executed
-if __name__ == "__main__":
-    test_scraper()
