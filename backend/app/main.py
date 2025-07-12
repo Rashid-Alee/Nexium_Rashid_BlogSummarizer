@@ -1,9 +1,6 @@
-# backend/app/main.py
-# Updated FastAPI with AI summarization
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from scraper import scrape_blog  # This now includes summarization!
+from scraper import scrape_blog 
 
 # Create FastAPI app
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -42,7 +39,6 @@ async def root():
 async def health():
     return {"status": "healthy", "service": "ai-blog-scraper"}
 
-# ENHANCED scraping endpoint with AI summary!
 @app.post("/scrape")
 async def scrape_url(request: dict):
     """
@@ -68,7 +64,7 @@ async def scrape_url(request: dict):
         
         print(f"📡 Scraping with AI summary: {url}")
         
-        # Call enhanced scraper (now includes summarization!)
+        # Call scraper
         result = scrape_blog(url)
         
         if result.get("success"):
@@ -113,7 +109,6 @@ async def test():
             "api_status": "error"
         }
 
-# New endpoint: Just get summary (useful for testing)
 @app.post("/summarize")
 async def summarize_text(request: dict):
     """
