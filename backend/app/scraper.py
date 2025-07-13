@@ -1,14 +1,20 @@
+# backend/app/scraper.py
+
 import requests
 from bs4 import BeautifulSoup
 import re
 from summarizer import create_summary
+from translator import StaticUrduTranslator  # Import our new translator
 
 def scrape_blog(url):
     """
-    Scrape blog content and generate AI summary
+    Scrape blog content, generate AI summary, and translate to Urdu
     """
     
     try:
+        # Initialize translator
+        translator = StaticUrduTranslator()
+        
         # Setup request headers to avoid bot detection
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -43,11 +49,17 @@ def scrape_blog(url):
         paragraph_count = len([p for p in content.split('\n\n') if p.strip()])
         
         # Generate AI summary if content is long enough
+        ai_summary = ""
+        ai_summary_urdu = ""
+        summary_stats = {}
+        translation_stats = {}
+        
         if word_count > 50:
             try:
+                # Step 1: Create clean English summary first
                 summary_result = create_summary(content, num_sentences=3)
-                
                 ai_summary = summary_result['summary']
+                
                 summary_stats = {
                     'original_sentences': summary_result['original_sentences'],
                     'summary_sentences': summary_result['summary_sentences'],
@@ -55,26 +67,42 @@ def scrape_blog(url):
                     'compression_ratio': f"{summary_result['summary_sentences']}/{summary_result['original_sentences']}"
                 }
                 
+                # Step 2: Translate ONLY the clean English summary to Urdu
+                ai_summary_urdu, translation_stats = translator.translate_text(ai_summary)
+                
             except Exception as e:
                 ai_summary = "Summary generation failed, but content extracted successfully."
+                ai_summary_urdu = "خلاصہ بنانے میں خرابی، لیکن مواد کامیابی سے نکالا گیا۔"
                 summary_stats = {"error": str(e)}
+                translation_stats = {"error": str(e)}
         
         else:
             ai_summary = "Content too short for meaningful summarization."
+            ai_summary_urdu = "مواد خلاصہ بنانے کے لیے بہت مختصر ہے۔"
             summary_stats = {"note": "Content under 50 words"}
+            translation_stats = {"note": "Content too short"}
         
-        # Return complete result
+        # Also translate the title if available
+        title_urdu = ""
+        if title and title != "No title found":
+            title_urdu, _ = translator.translate_text(title)
+        
+        # Return complete result with translation
         return {
             "success": True,
             "title": title,
+            "title_urdu": title_urdu,
             "content": content,
             "ai_summary": ai_summary,
+            "ai_summary_urdu": ai_summary_urdu,
             "summary_stats": summary_stats,
+            "translation_stats": translation_stats,
             "word_count": word_count,
             "char_count": char_count,
             "paragraph_count": paragraph_count,
             "url": url,
-            "metadata": metadata
+            "metadata": metadata,
+            "dictionary_info": translator.get_dictionary_size()
         }
         
     except Exception as e:
@@ -83,6 +111,7 @@ def scrape_blog(url):
             "error": f"Error occurred: {str(e)}"
         }
 
+# Keep all existing helper functions unchanged
 def remove_unwanted_elements(soup):
     """Remove scripts, ads, and navigation elements"""
     unwanted_tags = [
@@ -259,4 +288,3 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text)
     
     return text.strip()
-
