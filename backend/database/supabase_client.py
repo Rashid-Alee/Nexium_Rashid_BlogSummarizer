@@ -51,7 +51,7 @@ class SupabaseClient:
                 "url": summary_data.get("url"),
                 "title": summary_data.get("title"),
                 "title_urdu": summary_data.get("title_urdu"),
-                "summary": summary_data.get("ai_summary"),  # Note: mapping from ai_summary
+                "summary": summary_data.get("ai_summary"),  
                 "summary_urdu": summary_data.get("ai_summary_urdu"),
                 "word_count": summary_data.get("word_count", 0)
             }
@@ -61,7 +61,7 @@ class SupabaseClient:
             
             logger.info(f"💾 Saving summary for URL: {insert_data.get('url', 'Unknown')}")
             
-            # Insert or update (upsert) based on URL
+            # Insert or update based on URL
             result = self.client.table('blog_summaries').upsert(
                 insert_data,
                 on_conflict='url'  # Update if URL already exists

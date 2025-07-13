@@ -13,10 +13,10 @@ export default function BlogSummarizer() {
   const [error, setError] = useState('');
   const [showUrdu, setShowUrdu] = useState(false);
   
-  // 🔔 NEW: Notification system
+  // Notification system
   const [notification, setNotification] = useState(null);
 
-  // 🔔 NEW: Auto-hide notification after 5 seconds
+  //Auto-hide notification after 10 seconds
   useEffect(() => {
     if (notification) {
       const timer = setTimeout(() => {
@@ -26,7 +26,7 @@ export default function BlogSummarizer() {
     }
   }, [notification]);
 
-  // 🔔 NEW: Show notification function
+  // Show notification function
   const showNotification = (type, message, details = null) => {
     setNotification({ type, message, details });
   };
@@ -45,7 +45,7 @@ export default function BlogSummarizer() {
     setError('');
     setResult(null);
     setLoading(true);
-    setNotification(null); // Clear previous notifications
+    setNotification(null);
 
     try {
       const response = await fetch('http://localhost:8000/scrape', {
@@ -59,7 +59,7 @@ export default function BlogSummarizer() {
       if (data.success) {
         setResult(data.data);
         
-        // 🔔 NEW: Show appropriate notification based on cache status
+        //Show appropriate notification based on cache status
         if (data.cached) {
           showNotification('info', 'Retrieved from cache', {
             message: 'This article was previously analyzed',
@@ -94,7 +94,7 @@ export default function BlogSummarizer() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       
-      {/* 🔔 NEW: Notification Component - Center Top Position */}
+      {/*Notification Component - Center Top Position */}
       {notification && (
         <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md px-4">
           <div className="animate-in slide-in-from-top-4 duration-500 ease-out">
@@ -371,7 +371,7 @@ export default function BlogSummarizer() {
               </CardContent>
             </Card>
 
-            {/* Translation Quality Notice */}
+            {/* Translation Quality Warning */}
             {showUrdu && result.translation_stats && result.translation_stats.coverage < 70 && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <div className="flex items-center">
