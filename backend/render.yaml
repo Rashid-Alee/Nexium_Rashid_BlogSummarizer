@@ -1,0 +1,69 @@
+# render.yaml - Render deployment configuration
+# Place this file in your backend root directory
+
+services:
+  - type: web
+    name: blog-scraper-api
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
+    plan: free
+    region: oregon
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        generateValue: true
+      - key: RENDER
+        value: true
+      - key: SUPABASE_URL
+        sync: false  # You'll set this manually in Render dashboard
+      - key: SUPABASE_KEY
+        sync: false  # You'll set this manually in Render dashboard
+      - key: MONGODB_URI
+        sync: false  # You'll set this manually in Render dashboard
+      - key: MONGODB_DATABASE
+        value: nexium_blog_db
+      - key: FRONTEND_URL
+        sync: false  # You'll set this to your Vercel domain
+
+---
+
+# Alternative: If render.yaml doesn't work, create these individual files:
+
+# File 1: Procfile (create this in your backend root)
+# web: gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+
+# File 2: .dockerignore (create this in your backend root)
+# __pycache__/
+# *.pyc
+# *.pyo
+# *.pyd
+# .Python
+# env/
+# venv/
+# .venv/
+# .env
+# .DS_Store
+# .pytest_cache/
+# .coverage
+# htmlcov/
+# *.log
+# .git/
+# .gitignore
+# README.md
+# tests/
+# docs/
+
+# File 3: runtime.txt (create this in your backend root)
+# python-3.11.0
+
+# File 4: gunicorn.conf.py (create this in your backend root)
+# bind = f"0.0.0.0:{os.environ.get('PORT', 8000)}"
+# workers = 2
+# worker_class = "uvicorn.workers.UvicornWorker"
+# worker_connections = 1000
+# max_requests = 1000
+# max_requests_jitter = 100
+# timeout = 120
+# keepalive = 5
