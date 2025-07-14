@@ -1,14 +1,34 @@
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Interfaces for type safety
-interface ScrapeBlogRequest {
+interface BlogData {
+  title: string;
+  title_urdu: string;
+  content: string;
+  ai_summary: string;
+  ai_summary_urdu: string;
+  word_count: number;
+  char_count: number;
+  paragraph_count: number;
   url: string;
+  summary_stats?: {
+    compression_ratio: string;
+    important_words_found: number;
+  };
+  translation_stats?: {
+    method: string;
+    confidence: string;
+    coverage: number;
+    words_translated: number;
+    total_words: number;
+  };
 }
 
 interface ScrapeBlogResponse {
   success: boolean;
   cached?: boolean;
-  data?: any;
+  data?: BlogData;
   error?: string;
   performance?: {
     total_time_ms?: number;
@@ -21,23 +41,32 @@ interface ScrapeBlogResponse {
   };
 }
 
+interface DatabaseStatus {
+  supabase: { success: boolean; message?: string };
+  mongodb: { success: boolean; message?: string };
+  overall_status: string;
+}
+
 interface HealthResponse {
   status: string;
   service: string;
   environment: string;
-  databases: {
-    supabase: any;
-    mongodb: any;
-    overall_status: string;
-  };
+  databases: DatabaseStatus;
   response_time_ms: number;
   version: string;
+}
+
+interface SummaryItem {
+  id: string;
+  title: string;
+  url: string;
+  created_at: string;
 }
 
 interface RecentSummariesResponse {
   success: boolean;
   data?: {
-    summaries: any[];
+    summaries: SummaryItem[];
     count: number;
     limit: number;
   };
