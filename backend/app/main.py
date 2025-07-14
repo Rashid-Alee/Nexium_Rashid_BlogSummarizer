@@ -56,29 +56,43 @@ app = FastAPI(
 # PRODUCTION FIX: Dynamic CORS configuration
 def get_cors_origins():
     """Get CORS origins based on environment"""
+    # Your Vercel domain from the error message
+    vercel_domain = "https://nexium-rashid-blog-summarizer-ipgafzyl2.vercel.app"
+    
     # Get environment variable for frontend URL
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
     
     origins = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://localhost:3000",
         frontend_url,  # This will be your Vercel domain
+        vercel_domain,  # Explicitly add your Vercel domain
+        "https://nexium-rashid-blog-summarizer-ipgafzyl2.vercel.app",  # Your production domain
+        "*.vercel.app",  # Allow all Vercel subdomains (if needed)
     ]
     
     # Add production domains
     if "vercel.app" in frontend_url:
         origins.append(frontend_url)
     
+    # Remove duplicates and None values
+    origins = list(set(filter(None, origins)))
+    
+    print(f"🌐 CORS Origins configured: {origins}")  # Debug log
+    
     return origins
 
-# Enable CORS with dynamic origins
+# Enable CORS with updated configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_cors_origins(),
+    allow_origins=get_cors_origins(),  # Your domains
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly list methods
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],  # Expose all headers
 )
+
 
 @app.get("/")
 async def root():
