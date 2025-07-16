@@ -1,9 +1,3 @@
-"""
-PRODUCTION-READY FastAPI Application
-Assignment 2: Blog Summarizer with Dual Database Storage
-Fixed for Render deployment
-"""
-
 import sys
 import os
 from fastapi import FastAPI, HTTPException
@@ -12,11 +6,9 @@ import logging
 import asyncio
 import time
 
-# PRODUCTION FIX: Simplified path handling
 # Add current directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# PRODUCTION FIX: Environment variable loading
 from dotenv import load_dotenv
 # Try to load .env from current directory first, then parent
 if os.path.exists('.env'):
@@ -24,7 +16,6 @@ if os.path.exists('.env'):
 else:
     load_dotenv()
 
-# Import your modules (ensure these files are in the same directory as main.py)
 try:
     from scraper import scrape_blog
     from database.database_service import db_service
@@ -47,7 +38,6 @@ app = FastAPI(
     title="AI-Powered Blog Scraper & Summarizer v2.0",
     description="Advanced blog analysis with dual database storage (Supabase + MongoDB)",
     version="2.0.0",
-    # PRODUCTION FIX: Enable docs for debugging (disable later if needed)
     docs_url="/docs", 
     redoc_url="/redoc", 
     openapi_url="/openapi.json"
@@ -67,7 +57,7 @@ def get_cors_origins():
         "http://127.0.0.1:3000",
         "https://localhost:3000",
         frontend_url,  # This will be your Vercel domain
-        vercel_domain,  # Explicitly add your Vercel domain
+        vercel_domain,  
         "https://nexium-rashid-blog-summarizer-ipgafzyl2.vercel.app",  # Your production domain
         "*.vercel.app",  # Allow all Vercel subdomains (if needed)
     ]
@@ -280,13 +270,12 @@ async def scrape_and_save(request: dict):
         logger.error(f"❌ Error in scrape endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-# Additional endpoints (keeping existing ones)...
 
 @app.get("/recent")
 async def get_recent_summaries(limit: int = 10):
     """Get recent blog summaries with pagination"""
     try:
-        if limit > 50:  # Prevent excessive queries
+        if limit > 50: 
             limit = 50
             
         recent_data = await db_service.get_recent_activity(limit)
@@ -327,9 +316,7 @@ async def get_database_statistics():
             "error": str(e)
         }
 
-# PRODUCTION FIX: Proper application startup for Render
 if __name__ == "__main__":
     import uvicorn
-    # Get port from environment variable (Render provides this)
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)

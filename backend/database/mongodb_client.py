@@ -1,8 +1,3 @@
-"""
-MongoDB Client
-Professional client for managing full blog content in document format
-"""
-
 import os
 from typing import Dict, List, Optional
 from pymongo import MongoClient

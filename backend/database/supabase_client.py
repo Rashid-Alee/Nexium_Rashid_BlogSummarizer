@@ -1,7 +1,3 @@
-"""
-Supabase PostgreSQL Client
-Professional client for managing blog summaries in structured format
-"""
 
 import os
 from typing import Dict, List, Optional
@@ -15,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class SupabaseClient:
     """
-    Professional Supabase client with error handling and best practices
+    Supabase client with error handling
     Manages structured blog summary data in PostgreSQL
     """
     
@@ -182,5 +178,4 @@ class SupabaseClient:
             logger.error(f"❌ Error checking URL existence: {e}")
             return False
 
-# Create global instance for easy importing
 supabase_client = SupabaseClient()

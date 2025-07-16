@@ -1,8 +1,3 @@
-"""
-Conflict-Free Google Translate Implementation
-Uses deep-translator which doesn't conflict with Supabase
-"""
-
 import logging
 from typing import Tuple, Dict
 import requests
@@ -13,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class GoogleUrduTranslator:
     """
-    Real Google Translate using deep-translator (no dependency conflicts)
+    Real Google Translate using deep-translator
     """
     
     def __init__(self):
@@ -50,11 +45,11 @@ class GoogleUrduTranslator:
             
             logger.info(f"🌐 Translating text to Urdu: {text[:50]}...")
             
-            # Method 1: Use deep-translator if available
+            # Use deep-translator if available
             if self.translator and self.method_used == "google_translate_deep":
                 return self._translate_with_deep_translator(text)
             
-            # Method 2: Direct API call (no dependency conflicts)
+            # Direct API call (no dependency conflicts)
             elif self.method_used == "direct_api":
                 return self._translate_with_direct_api(text)
             

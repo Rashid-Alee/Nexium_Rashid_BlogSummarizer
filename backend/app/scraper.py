@@ -1,10 +1,9 @@
-# backend/app/scraper.py
 
 import requests
 from bs4 import BeautifulSoup
 import re
 from summarizer import create_summary
-from translator import StaticUrduTranslator  # Import our new translator
+from translator import StaticUrduTranslator  
 
 def scrape_blog(url):
     """
