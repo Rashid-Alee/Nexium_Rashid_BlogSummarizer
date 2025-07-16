@@ -1,11 +1,46 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+class ApiClient {
+  private baseUrl: string;
 
-export const api = {
-  async scrapeBlog(url: string) {
+  constructor() {
+    this.baseUrl = this.getApiUrl();
+  }
+
+  getApiUrl(): string {
+    if (typeof window !== 'undefined') {
+      return process.env.NEXT_PUBLIC_API_URL || 'https://blog-scraper-api.onrender.com';
+    } else {
+      return process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://blog-scraper-api.onrender.com';
+    }
+  }
+
+  async checkHealth(): Promise<any> {
     try {
-      console.log(`🚀 Calling API: ${API_BASE_URL}/scrape`);
+      console.log(`🏥 Checking API health: ${this.baseUrl}/health`);
       
-      const response = await fetch(`${API_BASE_URL}/scrape`, {
+      const response = await fetch(`${this.baseUrl}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ Health check failed:', error);
+      throw error;
+    }
+  }
+
+  async scrapeBlog(url: string): Promise<any> {
+    try {
+      console.log(`🚀 Starting blog scrape for: ${url}`);
+      
+      const response = await fetch(`${this.baseUrl}/scrape`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -14,57 +49,57 @@ export const api = {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('❌ Error scraping blog:', error);
+      console.error('❌ Scrape failed:', error);
       throw error;
     }
-  },
-
-  async checkHealth() {
-    try {
-      console.log(`🏥 Checking API health: ${API_BASE_URL}/health`);
-      
-      const response = await fetch(`${API_BASE_URL}/health`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('❌ Error checking health:', error);
-      throw error;
-    }
-  },
-
-  async getRecentSummaries(limit: number = 10) {
-    try {
-      console.log(`📋 Getting recent summaries: ${API_BASE_URL}/recent?limit=${limit}`);
-      
-      const response = await fetch(`${API_BASE_URL}/recent?limit=${limit}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('❌ Error getting recent summaries:', error);
-      throw error;
-    }
-  },
-
-  getApiUrl(): string {
-    return API_BASE_URL;
   }
-};
 
-// Export individual functions for convenience
-export const { scrapeBlog, checkHealth, getRecentSummaries, getApiUrl } = api;
+  async getRecentSummaries(limit: number = 10): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/recent?limit=${limit}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Failed to get recent summaries:', error);
+      throw error;
+    }
+  }
+
+  async getStatistics(): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/stats`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Failed to get statistics:', error);
+      throw error;
+    }
+  }
+}
+
+export const api = new ApiClient();
